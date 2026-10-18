@@ -3744,13 +3744,17 @@
         }
     </script>
 
-<!-- ====== رادار الفايدي الذكي لتتبع سلوك وتصفح الزبون داخل المنيو ====== -->
+<!-- ====== رادار الفايدي الذكي لتتبع رحلة الزبون داخل المنيو ====== -->
 <script>
 (function() {
+    if (window._faidyRadarActive) return;
+    window._faidyRadarActive = true;
+    window._faidyRadarStopped = false; // متغير جديد لإيقاف الرادار كلياً عند دخول المدير
     try {
-        var MENU_TYPE = "منيو البيع العام 🛒";
+        var pageTitle = document.title || "منيو أبناء الفايدي";
+        var MENU_TYPE = pageTitle.indexOf("السلماني") !== -1 || pageTitle.indexOf("كافيه") !== -1 ? "منيو مقهى السلماني ☕" : "منيو الحلويات العام 🛒";
         var sessionStartMs = Date.now();
-        var activeSeconds = 0;
+        var activeSeconds = 1;
         var maxScrollPct = 0;
         var visitedCategories = [];
         var clickedItemsList = [];
@@ -3769,45 +3773,46 @@
         var ua = navigator.userAgent || "";
         var deviceType = /iPhone|iPad|iPod/i.test(ua) ? "📱 آيفون" : (/Android/i.test(ua) ? "📱 أندرويد" : "💻 كمبيوتر");
 
-        function getDbRef() {
-            try {
-                if (typeof dbBase !== "undefined" && dbBase) return dbBase;
-                if (typeof firebase !== "undefined" && firebase.apps && firebase.apps.length > 0) return firebase.database();
-            } catch (e) {}
-            return null;
-        }
-
-        function pushUniqueLimited(arr, val, maxLen) {
+        function pushUnique(arr, val) {
             if (!val) return;
-            var clean = String(val).trim();
-            if (!clean) return;
+            var clean = String(val).replace(/[\n\r]+/g, " ").trim();
+            if (!clean || clean.length > 65) return;
             if (arr[arr.length - 1] !== clean) {
                 arr.push(clean);
-                if (arr.length > (maxLen || 25)) arr.shift();
+                if (arr.length > 25) arr.shift();
             }
         }
 
-        function getBehaviorStatus() {
-            if (finalActionTaken.indexOf("طلب") !== -1 || finalActionTaken.indexOf("واتساب") !== -1) {
-                return "✅ تفاعل / أرسل طلب";
+        function computeStatus() {
+            if (finalActionTaken.indexOf("طلب") !== -1 || finalActionTaken.indexOf("واتساب") !== -1 || finalActionTaken.indexOf("إرسال") !== -1) {
+                return "✅ أرسل طلب / تواصل";
             }
             if (cartAddedList.length > 0) {
-                return "🛒 أضاف للسلة ولم يكمل الطلب";
+                return "🛒 أضاف للسلة وتراجع";
             }
             if (clickedItemsList.length > 0) {
-                return "🔥 مهتم (فحص أصناف بالمنيو)";
+                return "🔥 مهتم (ضغط على أصناف)";
             }
-            if (visitedCategories.length > 0 || maxScrollPct > 22 || activeSeconds >= 15) {
-                return "👀 تصفح وتقليب أقسام";
+            if (visitedCategories.length > 0 || maxScrollPct > 20 || activeSeconds >= 12) {
+                return "👀 تصفح وقلّب المنيو";
             }
-            return "🚪 دخل وخرج سريعاً (ارتداد)";
+            return "🚪 دخل وطلع على طول";
         }
 
-        function syncSessionToFirebase() {
-            var db = getDbRef();
-            if (!db) return;
-            var totalDurationSec = Math.max(activeSeconds, Math.round((Date.now() - sessionStartMs) / 1000));
-            var payload = {
+        var firebaseDbUrl = "https://faidy-web-app-default-rtdb.firebaseio.com/MENU_SESSIONS_LOGS/" + sessionId + ".json";
+
+        function sendRadarUpdate(useBeacon) {
+            if (window._faidyRadarStopped) return; // منع الإرسال إذا كان الرادار متوقفاً
+
+            // 🎯 الخدعة السحرية: إذا اكتشف الرادار أنك فعلت "وضع الإدارة"، يحذف جلستك ويوقف نفسه!
+            if (document.body && document.body.classList.contains("admin-mode")) {
+                window._faidyRadarStopped = true;
+                try { fetch(firebaseDbUrl, { method: "DELETE" }).catch(function(){}); } catch(e) {}
+                return;
+            }
+
+            var totalSec = Math.max(activeSeconds, Math.round((Date.now() - sessionStartMs) / 1000));
+            var payloadObj = {
                 sessionId: sessionId,
                 menuType: MENU_TYPE,
                 isoDate: isoDate,
@@ -3815,99 +3820,104 @@
                 hour24: h24,
                 timestamp: sessionStartMs,
                 lastUpdate: Date.now(),
-                durationSec: totalDurationSec,
+                durationSec: totalSec,
                 maxScrollPct: maxScrollPct,
                 device: deviceType,
                 categories: visitedCategories,
                 clickedItems: clickedItemsList,
                 cartItems: cartAddedList,
                 finalAction: finalActionTaken || "تصفح فقط",
-                statusBadge: getBehaviorStatus()
+                statusBadge: computeStatus()
             };
+
+            var jsonStr = JSON.stringify(payloadObj);
+
             try {
-                db.ref("MENU_SESSIONS_LOGS/" + sessionId).set(payload);
+                fetch(firebaseDbUrl, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: jsonStr,
+                    keepalive: true
+                }).catch(function(){});
             } catch (e) {}
         }
 
-        // عداد الثواني الفعلي أثناء بقاء الزبون داخل صفحة المنيو
         setInterval(function() {
-            if (document.visibilityState !== "hidden") {
-                activeSeconds += 2;
-                if (activeSeconds === 4 || activeSeconds % 10 === 0) {
-                    syncSessionToFirebase();
-                }
+            if (window._faidyRadarStopped) return;
+            
+            // تحقق فوري: إذا فتحت الإدارة، نلغي جلستك حالاً
+            if (document.body && document.body.classList.contains("admin-mode")) {
+                sendRadarUpdate(false);
+                return;
             }
-        }, 2000);
+            
+            if (document.visibilityState !== "hidden") {
+                activeSeconds += 3;
+                sendRadarUpdate(false);
+            }
+        }, 3000);
 
-        // تتبع أقصى تمرير (Scroll) وصل إليه الزبون في الصفحة
         window.addEventListener("scroll", function() {
+            if (window._faidyRadarStopped) return;
             try {
-                var scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-                var docHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight;
-                if (docHeight > 0) {
-                    var pct = Math.min(100, Math.round((scrollTop / docHeight) * 100));
-                    if (pct > maxScrollPct) maxScrollPct = pct;
+                var st = window.scrollY || document.documentElement.scrollTop || 0;
+                var dh = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight;
+                if (dh > 0) {
+                    var p = Math.min(100, Math.round((st / dh) * 100));
+                    if (p > maxScrollPct) maxScrollPct = p;
                 }
             } catch (e) {}
         }, { passive: true });
 
-        // التقاط النقرات على الأقسام، الأصناف، أزرار السلة، وأزرار إرسال الطلب أو الواتساب
         document.addEventListener("click", function(e) {
+            if (window._faidyRadarStopped) return;
             try {
-                var target = e.target;
-                if (!target) return;
+                var t = e.target;
+                if (!t) return;
 
-                // 1. هل ضغط الزبون على قسم؟
-                var catEl = target.closest(".cat-nav-item, .cat-btn, [onclick*='setCategory'], [onclick*='filterCat']");
-                if (catEl) {
-                    var catName = catEl.innerText ? catEl.innerText.replace(/\s+/g, " ").trim() : "";
-                    if (catName) {
-                        pushUniqueLimited(visitedCategories, catName, 20);
-                        syncSessionToFirebase();
-                    }
+                var catBtn = t.closest(".cat-nav-item, .cat-btn, .category-btn, .filter-btn, [onclick*='setCategory'], [onclick*='filterCat'], [onclick*='selectCat']");
+                if (catBtn) {
+                    var cTxt = (catBtn.innerText || "").replace(/\s+/g, " ").trim();
+                    if (cTxt) { pushUnique(visitedCategories, cTxt); sendRadarUpdate(false); }
                     return;
                 }
 
-                // 2. هل ضغط الزبون على زر تواصل واتساب أو إرسال طلب؟
-                var waOrOrderEl = target.closest(".wa-btn, [onclick*='sendDirectMessage'], [onclick*='sendOrder'], [onclick*='checkout'], [onclick*='submitOrder'], .checkout-btn, #send-order-btn");
-                if (waOrOrderEl) {
-                    var actTxt = waOrOrderEl.innerText ? waOrOrderEl.innerText.replace(/\s+/g, " ").trim() : "تواصل / طلب";
-                    finalActionTaken = "🚀 ضغط: " + actTxt;
-                    syncSessionToFirebase();
+                var orderBtn = t.closest(".wa-btn, .checkout-btn, .send-order-btn, [onclick*='sendDirectMessage'], [onclick*='sendOrder'], [onclick*='checkout'], [onclick*='submitOrder'], [onclick*='confirmOrder']");
+                if (orderBtn) {
+                    var bTxt = (orderBtn.innerText || "إرسال طلب / واتساب").replace(/\s+/g, " ").trim();
+                    finalActionTaken = "🚀 طلب/تواصل: " + bTxt;
+                    sendRadarUpdate(false);
                     return;
                 }
 
-                // 3. هل ضغط الزبون على بطاقة صنف أو زر إضافة للسلة؟
-                var cardEl = target.closest(".item-card, .menu-card, .product-card");
-                if (cardEl) {
-                    var itemName = cardEl.getAttribute("data-name") || "";
-                    if (!itemName) {
-                        var titleEl = cardEl.querySelector(".item-title, .item-name, .product-title, h3, h4");
-                        if (titleEl) itemName = titleEl.innerText.trim();
+                var card = t.closest(".item-card, .menu-card, .product-card, .card, [data-name]");
+                if (card) {
+                    var iName = card.getAttribute("data-name") || "";
+                    if (!iName) {
+                        var titleNode = card.querySelector(".item-title, .item-name, .product-title, .card-title, h3, h4");
+                        if (titleNode) iName = titleNode.innerText.trim();
                     }
-                    if (itemName) {
-                        var isAddBtn = target.closest("button, .add-btn, .qty-btn, [onclick*='addToCart'], [onclick*='updateQty']");
-                        if (isAddBtn) {
-                            pushUniqueLimited(cartAddedList, itemName, 30);
-                            if (!finalActionTaken) finalActionTaken = "🛒 أضاف أصنافاً للسلة";
+                    if (iName) {
+                        var isCartBtn = t.closest("button, .add-btn, .qty-btn, .plus-btn, [onclick*='add'], [onclick*='Cart'], [onclick*='Qty']");
+                        if (isCartBtn) {
+                            pushUnique(cartAddedList, iName);
+                            if (!finalActionTaken) finalActionTaken = "🛒 أضاف للسلة";
                         } else {
-                            pushUniqueLimited(clickedItemsList, itemName, 30);
+                            pushUnique(clickedItemsList, iName);
                         }
-                        syncSessionToFirebase();
+                        sendRadarUpdate(false);
                     }
                 }
             } catch (err) {}
         }, true);
 
-        // حفظ فوري عند أول فتح للمنيو (حتى لو دخل وخرج بعد ثانيتين!)
-        setTimeout(syncSessionToFirebase, 1200);
+        setTimeout(function() { sendRadarUpdate(false); }, 800);
 
-        // حفظ نهائي لحظة إغلاق الصفحة أو الخروج من المنيو
         document.addEventListener("visibilitychange", function() {
-            if (document.visibilityState === "hidden") syncSessionToFirebase();
+            if (document.visibilityState === "hidden") sendRadarUpdate(true);
         });
-        window.addEventListener("pagehide", syncSessionToFirebase);
-        window.addEventListener("beforeunload", syncSessionToFirebase);
+        window.addEventListener("pagehide", function() { sendRadarUpdate(true); });
+        window.addEventListener("beforeunload", function() { sendRadarUpdate(true); });
     } catch (err) {}
 })();
 </script>
