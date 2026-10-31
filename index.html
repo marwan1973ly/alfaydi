@@ -55,7 +55,6 @@
         
         .menu-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 25px; padding: 25px; max-width: 1200px; margin: 0 auto; } @media(max-width: 380px) { .menu-grid { gap: 18px; padding: 15px; } }
         
-        /* 💡 استخدام عرض ثابت للبطاقات للحفاظ على تصميم Grid حتى مع Flexbox */
         .menu-card { flex: 1 1 165px; max-width: 250px; background: var(--card-bg); border-radius: 20px; border: 1px solid rgba(0,0,0,0.05); box-shadow: var(--card-shadow); display: flex; flex-direction: column; cursor: pointer; position: relative; transition: opacity 0.3s ease; } 
         @media(max-width: 380px) { .menu-card { flex: 1 1 145px; max-width: 200px; } }
         body.dark-mode .menu-card { border-color: #334155; }
@@ -100,7 +99,7 @@
         .best-seller-badge { position: absolute; top: -12px; right: -10px; background: linear-gradient(135deg, #ff4757, #c0392b); color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 900; z-index: 10; box-shadow: 0 4px 10px rgba(231,76,60,0.4); border: 2px solid #fff; }
         body.dark-mode .best-seller-badge { border-color: #1e293b; }
 
-        /* الأداة الذكية العائمة (Smart Feedback Widget) */
+        /* الأداة الذكية العائمة (Feedback) */
         #smart-feedback-widget { position: fixed; bottom: 20px; left: 20px; background: var(--card-bg); border: 2px solid var(--secondary); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); padding: 12px; width: 260px; z-index: 1000; font-family: 'Cairo', sans-serif; transition: all 0.3s; }
         .sf-close { position: absolute; top: 5px; right: 8px; cursor: pointer; color: #888; font-weight: bold; font-size: 14px; }
         .sf-title { font-size: 12px; font-weight: 900; color: var(--text-main); margin: 0 0 10px 0; text-align: center; padding-top: 5px;}
@@ -113,12 +112,53 @@
         .sf-btn:active { transform: scale(0.95); }
         .sf-textarea { width: 100%; height: 60px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 5px; padding: 5px; font-size: 11px; font-family: 'Cairo'; resize: none; background: var(--bg); color: var(--text-main); outline: none;}
         .sf-submit { background: var(--primary); color: var(--secondary); width: 100%; padding: 6px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
+        /* 🤖 الشات بوت الذكي (Mini-Bot) */
+        #bot-floating-btn { position: fixed; bottom: 85px; left: 20px; background: linear-gradient(135deg, #D4AF37, #f39c12); color: #800020; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 26px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 1000; border: 2px solid #fff; transition: transform 0.3s ease; }
+        #bot-floating-btn:hover { transform: scale(1.1); }
+        body.dark-mode #bot-floating-btn { border-color: #1e293b; }
+        
+        #chat-widget { display: none; position: fixed; bottom: 95px; left: 20px; width: 320px; max-width: 90vw; background: var(--card-bg); border: 2px solid var(--secondary); border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1001; flex-direction: column; overflow: hidden; font-family: 'Cairo', sans-serif; }
+        .chat-header { background: var(--primary); color: var(--secondary); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; font-weight: 900; font-size: 15px; }
+        .chat-close { cursor: pointer; font-size: 18px; color: #fff; font-weight: bold;}
+        .chat-body { padding: 15px; height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: var(--bg); }
+        .msg { max-width: 85%; padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: bold; line-height: 1.5; word-wrap: break-word; }
+        .msg-bot { background: rgba(212, 175, 55, 0.2); color: var(--text-main); border: 1px solid var(--secondary); align-self: flex-start; border-top-right-radius: 2px; }
+        .msg-user { background: var(--primary); color: #fff; align-self: flex-end; border-top-left-radius: 2px; }
+        .chat-options { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; background: var(--card-bg); border-top: 1px solid rgba(128,128,128,0.2); justify-content: center;}
+        .chat-opt-btn { background: var(--bg); color: var(--text-main); border: 1px solid var(--secondary); padding: 8px 10px; border-radius: 20px; font-size: 11.5px; font-weight: bold; cursor: pointer; font-family: 'Cairo'; transition: 0.2s; flex: 1 1 45%; text-align: center; }
+        .chat-opt-btn:hover { background: var(--secondary); color: #000; }
     </style>
 </head>
 <body class="dark-mode">
 
+    <!-- 🤖 أيقونة ونافذة الشات بوت الذكي المتكامل -->
+    <!-- 🤖 أيقونة ونافذة الشات بوت الذكي المتكامل -->
+    <div onclick="toggleChatBot()" style="position: fixed; bottom: 85px; left: 12px; z-index: 1000; cursor: pointer; text-align: center; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+        <div style="background: linear-gradient(135deg, #D4AF37, #f39c12); color: #800020; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 26px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #fff; margin: 0 auto 6px auto;">🤖</div>
+        <div style="background: #800020; color: #D4AF37; font-size: 10.5px; font-weight: 900; padding: 4px 10px; border-radius: 15px; border: 1px solid #D4AF37; box-shadow: 0 4px 10px rgba(0,0,0,0.4); font-family: 'Cairo'; white-space: nowrap;">مساعدك الذكي</div>
+    </div>
+    
+    <div id="chat-widget">
+        <div class="chat-header">
+            <span>🤖 المساعد الذكي - الفايدي</span>
+            <span class="chat-close" onclick="toggleChatBot()">✖</span>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <div class="msg msg-bot">مرحباً بك في حلواني أبناء الفايدي! ✨<br>كيف يمكنني مساعدتك اليوم؟</div>
+        </div>
+        <div class="chat-options">
+            <button class="chat-opt-btn" onclick="botReply('فتح السلة')" style="background:#27ae60; color:white; border:none;">🛒 عرض السلة</button>
+            <button class="chat-opt-btn" onclick="botReply('اختيار الفرع')" style="background:#8e44ad; color:white; border:none;">📍 اختيار فرع للطلب</button>
+            <button class="chat-opt-btn" onclick="botReply('رأيك يهمنا')">📝 رأيك يهمنا</button>
+            <button class="chat-opt-btn" onclick="botReply('مواعيد العمل')">🕒 مواعيد العمل</button>
+            <button class="chat-opt-btn" onclick="botReply('طرق الدفع')">💳 طرق الدفع</button>
+            <button class="chat-opt-btn" onclick="botReply('تحدث مع موظف')">💬 خدمة العملاء</button>
+        </div>
+    </div>
+
     <!-- الأداة العائمة للتقييم السريع -->
-    <div id="smart-feedback-widget">
+    <div id="smart-feedback-widget" style="display:none;">
         <span class="sf-close" onclick="document.getElementById('smart-feedback-widget').style.display='none'">✖</span>
         
         <div id="sf-step-1">
@@ -147,6 +187,9 @@
             تم الإرسال.. شكراً لك! ❤️
         </div>
     </div>
+    
+    <!-- زر فتح أداة التقييم السريع -->
+    <div onclick="document.getElementById('smart-feedback-widget').style.display='block'" style="position:fixed; bottom:20px; left:20px; background:var(--primary); color:var(--secondary); padding:10px 15px; border-radius:30px; font-weight:bold; font-size:12px; cursor:pointer; z-index:999; border:2px solid var(--secondary); box-shadow:0 4px 10px rgba(0,0,0,0.3);">💬 رأيك يهمنا</div>
 
     <div id="admin-branches-bar">
         <div style="font-weight:900; color:#fbbf24; margin-bottom:8px; font-size:14px;">🛠️ لوحة الإدارة السرية: تفعيل / إيقاف الطلب من الفروع + إيقاف الأصناف</div>
@@ -2390,7 +2433,7 @@
                     <button class="mini-cart-btn" onclick="event.stopPropagation(); openLightbox(this.closest('.menu-card'))">أضف للسلة 🛒</button>
                 </div>
             </div>
-            <div class="menu-card item-card" data-id="item_1781235661495" data-code="3547" data-unit="قطعة" data-cat="الملفي" data-frontpage="true" data-frontrank="999" data-name="ملفي شوكلاتة" data-price="3" data-img="data:image/webp;base64,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" onclick="openLightbox(this)">
+            <div class="menu-card item-card" data-id="item_1781235661495" data-code="3547" data-unit="قطعة" data-cat="الملفي" data-frontpage="true" data-frontrank="1" data-name="ملفي شوكلاتة" data-price="3" data-img="data:image/webp;base64,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" onclick="openLightbox(this)">
                 <div class="best-seller-badge">🔥 الأكثر طلباً</div>
                 <div class="admin-controls">
                     <button class="admin-btn btn-hide" onclick="toggleItemVisibility(event, 'item_1781235661495', true)">إيقاف مؤقت</button>
@@ -3364,6 +3407,67 @@
         firebase.initializeApp(firebaseConfig);
         const dbBase = firebase.database();
 
+        // 🤖 وظائف الشات بوت (المساعد الذكي المتكامل)
+        function toggleChatBot() {
+            let widget = document.getElementById('chat-widget');
+            let isVisible = widget.style.display === 'flex';
+            widget.style.display = isVisible ? 'none' : 'flex';
+            if(!isVisible) {
+                let chatBody = document.getElementById('chat-body');
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        }
+
+        function botReply(type) {
+            let chatBody = document.getElementById('chat-body');
+            
+            let userMsg = document.createElement('div');
+            userMsg.className = 'msg msg-user';
+            userMsg.innerText = type;
+            chatBody.appendChild(userMsg);
+            chatBody.scrollTop = chatBody.scrollHeight;
+            
+            setTimeout(() => {
+                let botMsg = document.createElement('div');
+                botMsg.className = 'msg msg-bot';
+                let replyText = '';
+                
+                if(type === 'مواعيد العمل') {
+                    replyText = "نعمل طيلة أيام الأسبوع 📅\nالفترات الصباحية والمسائية تختلف حسب الفرع، لكن غالباً من 11:00 ص إلى 11:00 م. ويوم الجمعة نفتح بعد العصر.";
+                } else if (type === 'طرق الدفع') {
+                    replyText = "نقبل الدفع بـ: 💵 كاش، أو 🏦 تحويل مصرفي (مصرف الوحدة، مصرف التجارة والتنمية).\nيمكنك اختيار الطريقة براحتك عند إتمام الطلب من السلة.";
+                } else if (type === 'تحدث مع موظف') {
+                    replyText = "سيتم تحويلك الآن لمحادثة خدمة العملاء مباشرة عبر الواتساب... 📲";
+                    setTimeout(() => {
+                        window.sendDirectMessage("خدمة العملاء (مساعدة عامة)", "0915658666");
+                    }, 1500);
+                } else if (type === 'فتح السلة') {
+                    replyText = "جاري فتح سلة المشتريات لك الآن... 🛒";
+                    setTimeout(() => {
+                        toggleChatBot(); 
+                        let cartOv = document.getElementById('cartOverlay');
+                        if (!cartOv.classList.contains('active')) toggleCart();
+                    }, 1000);
+                } else if (type === 'اختيار الفرع') {
+                    replyText = "حسناً، سأعرض لك قائمة الفروع لتختار منها النقطة الأقرب لك 📍";
+                    setTimeout(() => {
+                        toggleChatBot();
+                        openBranchPicker();
+                    }, 1000);
+                } else if (type === 'رأيك يهمنا') {
+                    replyText = "رأيك هو سر نجاحنا! ✨ ستفتح لك الآن نافذة التقييم والملاحظات السريعة.";
+                    setTimeout(() => {
+                        toggleChatBot();
+                        document.getElementById('smart-feedback-widget').style.display='block';
+                    }, 1200);
+                }
+                
+                botMsg.innerHTML = replyText.replace(/\n/g, '<br>');
+                chatBody.appendChild(botMsg);
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }, 600);
+        }
+
         // --- وظائف التقييم السريع الذكي ---
         function sfGoTo(step) {
             document.getElementById('sf-step-1').style.display = 'none';
@@ -3844,7 +3948,6 @@
             updateStoreStatus();
             setInterval(updateStoreStatus, 30000);
             
-            // الفلترة الأولية المطلوبة لتحديد الواجهة عند الفتح
             filterItems();
         })();
 
@@ -3863,12 +3966,13 @@
             filterItems();
         }
 
-        // ==========================================
-        // التعديل السحري هنا للترتيب في الواجهة! 🎯
-        // ==========================================
+        // 🎯 الفرز البرمجي الذكي (الترتيب الحقيقي)
         function filterItems() {
             let query = document.getElementById('searchInput').value.toLowerCase().trim();
-            document.querySelectorAll('.item-card').forEach(card => {
+            let grid = document.getElementById('menuGrid');
+            let cards = Array.from(grid.querySelectorAll('.item-card'));
+
+            cards.forEach(card => {
                 let name = card.getAttribute('data-name').toLowerCase();
                 let cat = card.getAttribute('data-cat');
                 let frontPageAttr = card.getAttribute('data-frontpage') || 'false';
@@ -3876,19 +3980,33 @@
                 let matchCat = false;
                 if (currentCat === '🌟 اخترنا لكم') {
                     matchCat = (frontPageAttr === 'true');
-                    // تطبيق الترتيب الذكي الذي أدخلته أنت في اللوحة
-                    card.style.order = card.getAttribute('data-frontrank');
                 } else if (currentCat === 'الكل') {
                     matchCat = true;
-                    card.style.order = ''; // إلغاء الترتيب المخصص ليعود للترتيب الطبيعي
                 } else {
                     matchCat = (cat === currentCat);
-                    card.style.order = ''; // إلغاء الترتيب المخصص ليعود للترتيب الطبيعي
                 }
 
                 let matchSearch = (query === '' || name.includes(query));
                 card.style.display = (matchCat && matchSearch) ? 'flex' : 'none';
             });
+
+            if (currentCat === '🌟 اخترنا لكم') {
+                // الفرز بناءً على الرقم الذي أدخلته أنت (ترتيب تصاعدي)
+                cards.sort((a, b) => {
+                    let rankA = parseInt(a.getAttribute('data-frontrank')) || 999;
+                    let rankB = parseInt(b.getAttribute('data-frontrank')) || 999;
+                    return rankA - rankB; 
+                });
+            } else {
+                // إرجاعها لترتيب الكتالوج (الأحدث أولاً)
+                cards.sort((a, b) => {
+                    let idA = parseInt(a.getAttribute('data-id').replace('item_', '')) || 0;
+                    let idB = parseInt(b.getAttribute('data-id').replace('item_', '')) || 0;
+                    return idB - idA; 
+                });
+            }
+
+            cards.forEach(card => grid.appendChild(card));
         }
 
         function openLightbox(card) {
