@@ -198,7 +198,6 @@
         </div>
 
         <div class="chat-options">
-            <button class="chat-opt-btn" onclick="botReply('فتح السلة')" style="background:#27ae60; color:white; border:none;">🛒 عرض السلة</button>
             <button class="chat-opt-btn" onclick="botReply('اختيار الفرع')" style="background:#8e44ad; color:white; border:none;">📍 اختيار فرع للطلب</button>
             <button class="chat-opt-btn" onclick="botReply('رأيك يهمنا')">📝 رأيك يهمنا</button>
             <button class="chat-opt-btn" onclick="botReply('مواعيد العمل')">🕒 مواعيد العمل</button>
@@ -207,7 +206,7 @@
         </div>
     </div>
 
-    <!-- الأداة العائمة للتقييم السريع -->
+   <!-- الأداة العائمة للتقييم السريع (محدثة مع اختيار الفرع) -->
     <div id="smart-feedback-widget" style="display:none;">
         <span class="sf-close" onclick="document.getElementById('smart-feedback-widget').style.display='none'">✖</span>
         
@@ -223,7 +222,7 @@
             <p class="sf-title">أين كانت المشكلة تحديداً؟</p>
             <div class="sf-btn-group">
                 <button class="sf-btn sf-btn-cart" onclick="sfSendQuick('صعوبة في السلة أو إتمام الطلب')">في السلة 🛒</button>
-                <button class="sf-btn sf-btn-call" onclick="sfSendQuick('صعوبة في التواصل مع الفرع')">في التواصل 📞</button>
+                <button class="sf-btn sf-btn-call" onclick="sfGoTo(4)">في التواصل 📞</button>
             </div>
         </div>
 
@@ -233,6 +232,50 @@
             <button class="sf-submit" onclick="sfSendText()">إرسال الملاحظة</button>
         </div>
         
+        <!-- الخطوة 4 (الجديدة): تحديد الفرع ديناميكياً -->
+        <div id="sf-step-4" style="display:none;">
+            <p class="sf-title">أي فرع واجهت معه الصعوبة؟</p>
+            <select id="sf-branch-select" style="width:100%; padding:8px; margin-bottom:10px; border-radius:6px; border:1px solid #ddd; font-family:inherit; font-weight:bold; color:var(--primary);">
+                <option value="" disabled selected>-- اختر الفرع --</option>
+                <!-- سيتم ملء الخيارات بواسطة JavaScript أدناه -->
+            </select>
+            <button class="sf-submit" onclick="let b = document.getElementById('sf-branch-select').value; if(!b){alert('الرجاء اختيار الفرع أولاً'); return;} sfSendQuick('تصويت سريع: صعوبة في التواصل مع الفرع (' + b + ')')">تأكيد وإرسال</button>
+        </div>
+
+        <div id="sf-step-success" style="display:none; text-align:center; color: #27ae60; font-weight:900; font-size:13px; padding:10px 0;">
+            تم الإرسال.. شكراً لك! ❤️
+        </div>
+    </div>
+
+        <div id="sf-step-2" style="display:none;">
+            <p class="sf-title">أين كانت المشكلة تحديداً؟</p>
+            <div class="sf-btn-group">
+                <button class="sf-btn sf-btn-cart" onclick="sfSendQuick('صعوبة في السلة أو إتمام الطلب')">في السلة 🛒</button>
+                <!-- التعديل هنا: نقل الزبون لخطوة اختيار الفرع بدلاً من الإرسال المباشر -->
+                <button class="sf-btn sf-btn-call" onclick="document.getElementById('sf-step-2').style.display='none'; document.getElementById('sf-step-4').style.display='block';">في التواصل 📞</button>
+            </div>
+        </div>
+
+        <div id="sf-step-3" style="display:none;">
+            <p class="sf-title">مساحتك الحرة لرأيك وملاحظاتك:</p>
+            <textarea id="sf-text" class="sf-textarea" placeholder="اكتب هنا..."></textarea>
+            <button class="sf-submit" onclick="sfSendText()">إرسال الملاحظة</button>
+        </div>
+        
+        <!-- الخطوة 4 (الجديدة): تحديد الفرع -->
+        <div id="sf-step-4" style="display:none;">
+            <p class="sf-title">أي فرع واجهت معه الصعوبة؟</p>
+            <select id="sf-branch-select" style="width:100%; padding:8px; margin-bottom:10px; border-radius:6px; border:1px solid #ddd; font-family:inherit; font-weight:bold; color:var(--primary);">
+                <option value="" disabled selected>-- اختر الفرع --</option>
+                <option value="السلماني">فرع السلماني</option>
+                <option value="شارع عشرين">فرع شارع عشرين</option>
+                <option value="فينيسيا">فرع فينيسيا</option>
+                <option value="طريق المطار">فرع طريق المطار</option>
+                <option value="غير محدد">مشكلة عامة (لم أحدد)</option>
+            </select>
+            <button class="sf-submit" onclick="let b = document.getElementById('sf-branch-select').value; if(!b){alert('الرجاء اختيار الفرع أولاً'); return;} sfSendQuick('تصويت سريع: صعوبة في التواصل مع الفرع (' + b + ')')">تأكيد وإرسال</button>
+        </div>
+
         <div id="sf-step-success" style="display:none; text-align:center; color: #27ae60; font-weight:900; font-size:13px; padding:10px 0;">
             تم الإرسال.. شكراً لك! ❤️
         </div>
@@ -263,8 +306,8 @@
         <div class="branches-container" id="branchesTopBar"></div>
     </div>
     
-   <div class="delivery-badge-container">
-        <div class="delivery-badge">
+  <div class="delivery-badge-container" style="cursor: pointer; z-index: 9999;" onclick="openBranchPicker()" title="اختر الفرع للطلب والتوصيل">
+        <div class="delivery-badge" style="cursor: pointer;">
             <span class="bike-icon">🛵</span> 
             <span class="text-glow">يتوفر توصيل</span>
         </div>
@@ -3632,16 +3675,38 @@
             }, 600);
         }
 
-        // --- وظائف التقييم السريع الذكي ---
+       // --- وظائف التقييم السريع الذكي ---
         function sfGoTo(step) {
             document.getElementById('sf-step-1').style.display = 'none';
             document.getElementById('sf-step-2').style.display = 'none';
             document.getElementById('sf-step-3').style.display = 'none';
+            let step4 = document.getElementById('sf-step-4');
+            if(step4) step4.style.display = 'none';
+            
             document.getElementById('sf-step-' + step).style.display = 'block';
+            
+            // ملء قائمة الفروع عند الوصول للخطوة 4 (من الإعدادات المركزية)
+            if(step === 4) {
+                let select = document.getElementById('sf-branch-select');
+                if(select && select.options.length <= 1) { // ملء مرة واحدة فقط
+                    branchesConfig.forEach(b => {
+                        if(!b.name.includes('خدمة العملاء')) {
+                            let opt = document.createElement('option');
+                            opt.value = b.name;
+                            opt.text = 'فرع ' + b.name;
+                            select.appendChild(opt);
+                        }
+                    });
+                    let optOther = document.createElement('option');
+                    optOther.value = 'غير محدد';
+                    optOther.text = 'مشكلة عامة (لم أحدد)';
+                    select.appendChild(optOther);
+                }
+            }
         }
 
         function sfSendQuick(issueType) {
-            let newFeedback = { text: "تصويت سريع: " + issueType, date: new Date().toLocaleString('ar-LY') };
+            let newFeedback = { text: issueType, date: new Date().toLocaleString('ar-LY') };
             try { dbBase.ref('MENU_FEEDBACKS').push(newFeedback); } catch(e) {}
             sfShowSuccess();
         }
@@ -3658,6 +3723,8 @@
             document.getElementById('sf-step-1').style.display = 'none';
             document.getElementById('sf-step-2').style.display = 'none';
             document.getElementById('sf-step-3').style.display = 'none';
+            let step4 = document.getElementById('sf-step-4');
+            if(step4) step4.style.display = 'none';
             document.getElementById('sf-step-success').style.display = 'block';
             setTimeout(() => { document.getElementById('smart-feedback-widget').style.display='none'; }, 2000);
         }
@@ -3874,6 +3941,7 @@
                 return;
             }
             selectedBranch = b;
+            window.radarBranchName = b.name;
             document.body.classList.add('sales-active');
             document.getElementById('branchPickerOverlay').classList.remove('active');
 
@@ -4080,9 +4148,23 @@
             }
         };
 
-        window.sendDirectMessage = function(branchName, phone) {
+       window.sendDirectMessage = function(branchName, phone) {
+            // إخبار الرادار باسم الفرع وحالة التواصل
+            window.radarBranchName = branchName;
+            window.finalActionTaken = "تواصل";
+            
             try { dbBase.ref('MENU_CLICKS/' + branchName).transaction(val => (val || 0) + 1); } catch (e) {}
+            
+            try {
+                dbBase.ref('MENU_LIVE_ACTIONS').push({
+                    "action": "أرسل طلب / تواصل (" + branchName + ")",
+                    "device": (/android/i.test(navigator.userAgent) ? "أندرويد 📱" : (/iPad|iPhone|iPod/.test(navigator.userAgent) ? "آيفون 🍏" : "كمبيوتر 💻")),
+                    "timestamp": new Date().toLocaleString('en-GB')
+                });
+            } catch (e) {}
+
             let finalPhone = formatWaPhone(phone);
+            // تم تصحيح علامات النزول لسطر جديد \n
             let messageText = "السلام عليكم ورحمة الله 👋\n" +
                               "أتواصل معكم من خلال *المنيو الإلكتروني* 📱✨\n" +
                               "(فرع " + branchName + ")\n\n" +
@@ -4286,7 +4368,12 @@
                 return openBranchPicker();
             }
 
+            // أضف هذين السطرين هنا لإخبار الرادار بفرع السلة
+            window.radarBranchName = selectedBranch.name;
+            window.finalActionTaken = "طلب";
+
             let location = document.getElementById('customerLocation').value.trim();
+            // ... (باقي الكود كما هو)
             if (!location) {
                 alert("يرجى إدخال (أين المكان / العنوان) أو كتابة الاستلام من المحل.");
                 document.getElementById('customerLocation').focus();
@@ -4401,20 +4488,30 @@
         }
 
         function computeStatus() {
-            if (finalActionTaken.indexOf("طلب") !== -1 || finalActionTaken.indexOf("واتساب") !== -1 || finalActionTaken.indexOf("إرسال") !== -1) {
-                return "✅ أرسل طلب / تواصل";
+                var bName = "";
+                try {
+                    // سحب اسم الفرع من المتغير الشامل الجديد أولاً، ثم من المتغير القديم
+                    if (window.radarBranchName) {
+                        bName = " (" + window.radarBranchName + ")";
+                    } else if (typeof selectedBranch !== 'undefined' && selectedBranch && selectedBranch.name) {
+                        bName = " (" + selectedBranch.name + ")";
+                    }
+                } catch(e) {}
+
+                if (finalActionTaken.indexOf("طلب") !== -1 || finalActionTaken.indexOf("واتساب") !== -1 || finalActionTaken.indexOf("إرسال") !== -1 || finalActionTaken.indexOf("تواصل") !== -1) {
+                    return "✅ أرسل طلب / تواصل" + bName;
+                }
+                if (cartAddedList.length > 0) {
+                    return "🛒 أضاف للسلة وتراجع" + bName;
+                }
+                if (clickedItemsList.length > 0) {
+                    return "🦁 مهتم (ضغط على أصناف)";
+                }
+                if (visitedCategories.length > 0 || maxScrollPct > 20 || activeSeconds > 12) {
+                    return "👀 تصفح وقلب المنيو";
+                }
+                return "👀 دخل وطلع على طول";
             }
-            if (cartAddedList.length > 0) {
-                return "🛒 أضاف للسلة وتراجع";
-            }
-            if (clickedItemsList.length > 0) {
-                return "🔥 مهتم (ضغط على أصناف)";
-            }
-            if (visitedCategories.length > 0 || maxScrollPct > 20 || activeSeconds >= 12) {
-                return "👀 تصفح وقلّب المنيو";
-            }
-            return "🚪 دخل وطلع على طول";
-        }
 
         var firebaseDbUrl = "https://faidy-web-app-default-rtdb.firebaseio.com/MENU_SESSIONS_LOGS/" + sessionId + ".json";
 
